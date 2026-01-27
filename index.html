@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מציג Markdown להדפסה</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* --- הגדרות מסך רגילות --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .controls {
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+        }
+        .btn-primary { background-color: #007bff; }
+        .btn-secondary { background-color: #6c757d; }
+        input[type="file"] { padding: 10px; background: #eee; border-radius: 5px; }
+
+        .page-container {
+            max-width: 80%;
+            min-height: 297mm;
+            margin: 30px auto;
+            background-color: white;
+            padding: 20mm;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* חשוב מאוד לחישוב רוחב */
+        }
+
+        #content { line-height: 1.6; font-size: 16px; }
+        #content img { max-width: 100%; height: auto; }
+        #content pre { background-color: #f4f4f4; padding: 10px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; }
+        /* תמיד להציב קטעי קוד בכיוון LTR ויישור שמאל */
+        #content pre,
+        #content pre code,
+        #content code {
+            direction: ltr !important;
+            unicode-bidi: embed !important;
+            text-align: left !important;
+            /* שמירה על גלילה אופקית תקינה בקוד ארוך */
+            white-space: pre !important;
+        }
+        #content blockquote { border-right: 4px solid #007bff; margin: 0; padding: 10px; background: #f9f9f9; }
+        
+        /* --- הגדרות הדפסה (התיקון החשוב) --- */
+        @media print {
+            /* הסתרת אזור השליטה לחלוטין שלא יתפוס מקום */
+            .controls {
+                display: none !important;
+            }
+
+            /* מיקום מחדש של הדף שיתחיל מראש הדף */
+            .page-container {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                background-color: white;
+                max-width: none;
+                overflow: visible !important;
+            }
+
+            body, html {
+                background-color: white;
+                height: auto;
+                overflow: visible !important;
+            }
+            
+            /* ווידוא שצבעי טקסט שחורים בהדפסה */
+            #content {
+                color: black !important;
+            }
+
+            /* גם בהדפסה יש להבטיח שקטעי קוד יהיו LTR */
+            #content pre,
+            #content pre code,
+            #content code {
+                direction: ltr !important;
+                unicode-bidi: embed !important;
+                text-align: left !important;
+                white-space: pre !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <input type="file" id="fileInput" accept=".md,.txt">
+        <button class="btn btn-secondary" onclick="toggleDirection()">שינוי כיוון (RTL/LTR)</button>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ שמור כ-PDF</button>
+    </div>
+
+    <div class="page-container">
+        <div id="content">
+            <div style="text-align:center; color:black; margin-top:50px;">
+                אנא טען קובץ MD...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const contentDiv = document.getElementById('content');
+        let isRTL = true;
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                contentDiv.innerHTML = marked.parse(e.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        function toggleDirection() {
+            isRTL = !isRTL;
+            contentDiv.style.direction = isRTL ? 'rtl' : 'ltr';
+            contentDiv.style.textAlign = isRTL ? 'right' : 'left';
+            
+            // תיקון ל-Blockquote בהחלפת כיוון
+            const bqs = document.querySelectorAll('blockquote');
+            bqs.forEach(bq => {
+                if(isRTL) {
+                    bq.style.borderRight = "4px solid #007bff";
+                    bq.style.borderLeft = "none";
+                } else {
+                    bq.style.borderLeft = "4px solid #007bff";
+                    bq.style.borderRight = "none";
+                }
+            });
+
+            // ודא שקטעי קוד תמיד LTR (גם בשינוי כיוון)
+            const codeBlocks = document.querySelectorAll('#content pre, #content pre code, #content code');
+            codeBlocks.forEach(el => {
+                el.style.direction = 'ltr';
+                el.style.unicodeBidi = 'embed';
+                el.style.textAlign = 'left';
+                el.style.whiteSpace = 'pre';
+            });
+        }
+    </script>
+</body>
+</html>
